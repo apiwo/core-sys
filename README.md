@@ -1,8 +1,8 @@
 # core-sys
 
-Welcome to core-sys. This repository contains custom, highly optimized Linux system packages and scripts. The flagship component of this repository is **core-init**, a lightweight, bash-driven init system designed to completely replace complex, monolithic init systems (like systemd) with explicit, transparent, and user-controlled shell scripting. 
+**files provided are my configs and ***MOST LIKELY** need to be tweaked**
 
-By taking absolute ownership of PID 1, core-init allows advanced users to strip their boot process down to the bare minimum, reducing overhead and providing an absolute understanding of exactly what services are running on their system.
+Welcome to core-sys. This repository contains custom, highly optimized Linux system packages and scripts. The flagship component of this repository is **core-init**, a lightweight, bash-driven init system designed to completely replace complex, monolithic init systems (like systemd) with explicit, transparent, and user-controlled shell scripting. 
 
 ---
 
