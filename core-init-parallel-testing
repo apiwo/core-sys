@@ -1,0 +1,109 @@
+#!/bin/bash
+
+#THIS IS THE TESTING VERSION OF CORE.
+
+
+# 1. Take absolute ownership of the console (Fixes IOCTL terminal errors)
+exec < /dev/console > /dev/console 2>&1
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Refuse to run if not PID 1
+if [ "$$" != "1" ]; then exit 1; fi
+
+# 2. Clear the screen of kernel outputs
+clear
+
+# 3. Print the custom CORE ASCII art
+echo -e "\e[1;36m"
+cat << 'ART'
+
+
+
+    ####:   .####.    ##.####   .####:
+  #######  .######.   #######  .######:
+  ##:  :#  ###  ###   ###.     ##:  :##
+ ##.       ##.  .##   ##       ########
+ ##        ##    ##   ##       ########
+ ##.       ##.  .##   ##       ##
+  ##:  .#  ###  ###   ##       ###.  :#     ##
+  #######  .######.   ##       .#######     ##
+    ####:   .####.    ##        .#####:     ##
+  _            _              _ _ _   _
+ | |_ ___  ___| |_    ___  __| (_) |_(_) ___  _ __
+ | __/ _ \/ __| __|  / _ \/ _` | | __| |/ _ \| '_ \
+ | ||  __/\__ \ |_  |  __/ (_| | | |_| | (_) | | | |
+  \__\___||___/\__|  \___|\__,_|_|\__|_|\___/|_| |_| v.t1 Parallel
+
+
+
+ART
+echo -e "\e[0m\n"
+
+# 4. Mount core systems (CGROUPS must be here for elogind to work)
+echo -e "  \e[1;32m[ Done ]\e[0m Mounting virtual filesystems and cgroups..."
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+echo -e "  \e[1;32[Working]\e[0m"
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts -o nosuid,noexec,gid=5,mode=620
+
+mount -t tmpfs tmpfs /run -o mode=755,nodev,nosuid
+mount -t tmpfs tmpfs /dev/shm -o nosuid,nodev
+mkdir -p /sys/fs/cgroup
+mount -t cgroup2 none /sys/fs/cgroup 2>/dev/null || mount -t tmpfs cgroup_root /sys/fs/cgroup
+mount -o remount,rw /
+mount /boot
+# 5. Load Drivers
+echo -e "  \e[1;32m[ OK ]\e[0m Loading hardware drivers..."
+modprobe nvidia nvidia-drm modeset=1
+nvidia-modprobe -u -c=0 2>/dev/null
+
+if [ -x /lib/systemd/systemd-udevd ]; then /lib/systemd/systemd-udevd --daemon
+elif [ -x /sbin/udevd ]; then /sbin/udevd --daemon; fi
+udevadm trigger --action=add
+udevadm settle --timeout=10 &
+
+# 6. Basic Network Setup
+echo -e "  \e[1;32m[ OK ]\e[0m Setting up loopback and hostname..."
+[ -f /etc/hostname ] && hostname "$(cat /etc/hostname)"
+ip link set lo up
+
+echo ""
+
+# 7. Start Services in Parallel
+mkdir -p /run/dbus /run/lock /run/NetworkManager
+
+# Fire off independent services instantly in the background
+/usr/sbin/NetworkManager --no-daemon >/dev/null 2>&1 &
+echo -e "  \e[1;32m[ OK ]\e[0m Started NetworkManager"
+
+setsid /sbin/agetty -8 --noclear tty2 linux >/dev/null 2>&1 &
+echo -e "  \e[1;32m[ OK ]\e[0m Started tty2"
+
+# Start DBus (Blocks briefly because Elogind depends on it)
+dbus-daemon --system --fork
+while [ ! -S /run/dbus/system_bus_socket ]; do sleep 0.1; done
+echo -e "  \e[1;32m[ OK ]\e[0m Started dbus"
+
+# Start Elogind now that DBus is ready
+/usr/lib/elogind/elogind &
+echo -e "  \e[1;32m[ OK ]\e[0m Started elogind"
+
+# making nvidia do its stuff
+echo -e "  \e[1;32m[ OK ]\e[0m Activated Nvidia Hardware"
+modprobe nvidia nvidia-uvm nvidia-drm modeset=1
+nvidia-modprobe -u -c=0
+
+# Strict wait for Nvidia GPU before SDDM starts
+while [ ! -e /dev/dri/card0 ] && [ ! -e /dev/nvidiactl ]; do sleep 0.1; done
+
+/usr/bin/sddm >/dev/null 2>&1 &
+echo -e "  \e[1;32m[ OK ]\e[0m Started sddm"
+echo -e "  \e[1;32m[ Core finished ]\e[0m"
+
+# 8. Keep PID 1 alive
+trap 'poweroff -f' SIGPWR
+trap 'reboot -f' SIGINT
+while true; do wait -n 2>/dev/null || sleep 1; done
