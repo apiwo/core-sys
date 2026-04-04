@@ -104,6 +104,6 @@ echo -e "  \e[1;32m[ OK ]\e[0m Started sddm"
 echo -e "  \e[1;32m[ Core finished ]\e[0m"
 
 # 8. Keep PID 1 alive
-trap 'poweroff -f' SIGPWR
-trap 'reboot -f' SIGINT
+trap 'reboot -f || echo b > /proc/sysrq-trigger' SIGUSR1
+trap 'poweroff -f || echo o > /proc/sysrq-trigger' SIGUSR2
 while true; do wait -n 2>/dev/null || sleep 1; done
