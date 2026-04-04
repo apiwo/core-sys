@@ -4,7 +4,7 @@ Core-sys is my repo for my linux system packages.
 To install core-init git clone the project or just download the init file (any flavor).
 Then put it into a directory for example mine is 
 
-"/sbin/core-init"
+"/sbin/core-init" (might need to change core init config to match this)
 
 Go to your grub or whatever bootloader and update the config to use the core-init.
 
