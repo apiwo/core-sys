@@ -2,7 +2,7 @@
 
 **files provided are my configs and ***MOST LIKELY** need to be tweaked**
 
-Welcome to core-sys. This repository contains custom, highly optimized Linux system packages and scripts. The flagship component of this repository is **core-init**, a lightweight, bash-driven init system designed to completely replace complex, monolithic init systems (like systemd) with explicit, transparent, and user-controlled shell scripting. 
+Welcome to core-sys. This repository contains custom, highly optimized Linux system packages and/or scripts. The flagship component of this repository is **core-init**, a lightweight, bash-driven init system designed to completely replace complex, monolithic init systems (like systemd) with explicit, transparent, and user-controlled shell scripting. 
 
 ---
 
